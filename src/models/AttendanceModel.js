@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
+// Leave Request Schema (with unique leaveRequestId)
 const leaveRequestSchema = new mongoose.Schema({
+  leaveRequestId: {
+    type: String, // Use String for better readability and flexibility
+    required: true,
+    unique: true, // Ensure each leave request has a unique ID
+  },
   type: {
     type: String,
     enum: ["Casual Leave", "Sick Leave", "Emergency Leave", "Others"],
@@ -21,30 +27,46 @@ const leaveRequestSchema = new mongoose.Schema({
   },
 });
 
-const attendanceSchema = new mongoose.Schema({
-  empId: {
-    type: String,
-    required: true,
-  },
-  name: {
-    type: String,
-    required: true,
-  },
+// Daily Record Schema (remains the same)
+const dailyRecordSchema = new mongoose.Schema({
   date: {
     type: Date,
     required: true,
-    unique: true, // Ensures that attendance can only be logged once per day per employee
+    unique: true, // Ensures that a daily record can only be created once per day
   },
   status: {
     type: String,
     enum: ["present", "absent"], // Only present or absent
     required: true,
   },
-  leaveRequests: [leaveRequestSchema], // Array to hold leave requests for the employee
 });
 
-// Ensure that attendance can only be logged once per day per employee
-attendanceSchema.index({ empId: 1, date: 1 }, { unique: true });
+// Attendance Schema
+const attendanceSchema = new mongoose.Schema({
+  empId: {
+    type: String,
+    required: true,
+    unique: true, // Ensures that an employee entry exists only once
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  leaveRequests: [leaveRequestSchema], // Array to hold leave requests for the employee
+  monthlyLeaveCount: {
+    type: Map,
+    of: Number,
+    default: new Map(), // Format: { "YYYY-MM": count }
+  },
+  totalLeavesThisMonth: {
+    type: Number,
+    default: 0,
+  },
+  dailyRecords: [dailyRecordSchema], // Array to hold daily records for the employee
+});
+
+// Ensure that a daily record can only be created once per day
+dailyRecordSchema.index({ date: 1 }, { unique: true });
 
 const AttendanceModel = mongoose.model("Attendance", attendanceSchema);
 
