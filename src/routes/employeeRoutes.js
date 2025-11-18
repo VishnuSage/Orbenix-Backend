@@ -2,12 +2,14 @@
 const express = require("express");
 const router = express.Router();
 const employeeController = require("../controllers/employeeController");
+const { validateAddEmployee, validateUpdateEmployee, validateEmpIdParam } = require("../middleware/employeeValidation");
+const auditLogger = require("../middleware/auditLogger");
 
 // Routes for employee management
 router.get("/", employeeController.getAllEmployees); // Fetch all employees
-router.post("/", employeeController.addEmployee); // Add a new employee
-router.put("/:empId", employeeController.updateEmployee); // Update an employee
-router.delete("/:empId", employeeController.deleteEmployee); // Delete an employee
+router.post("/", validateAddEmployee, auditLogger('add-employee'), employeeController.addEmployee); // Add a new employee
+router.put("/:empId", validateUpdateEmployee, auditLogger('update-employee'), employeeController.updateEmployee); // Update an employee
+router.delete("/:empId", validateEmpIdParam, auditLogger('delete-employee'), employeeController.deleteEmployee); // Delete an employee
 // Fetch an employee by ID
 router.get("/:empId", employeeController.fetchEmployeeById); // Fetch employee by ID
 

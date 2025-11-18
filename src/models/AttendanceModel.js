@@ -65,8 +65,6 @@ const attendanceSchema = new mongoose.Schema({
   dailyRecords: [dailyRecordSchema], // Array to hold daily records for the employee
 });
 
-// Ensure that a daily record can only be created once per day
-dailyRecordSchema.index({ date: 1 }, { unique: true });
 
 const AttendanceModel = mongoose.model("Attendance", attendanceSchema);
 

@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const helmet = require("helmet"); // Import Helmet
+const compression = require("compression");
 const connectDB = require("./src/config/db");
 const authRoutes = require("./src/routes/authRoutes");
 const employeeRoutes = require("./src/routes/employeeRoutes");
@@ -12,10 +13,11 @@ const performanceRoutes = require("./src/routes/performanceRoutes");
 const announcementRoutes = require("./src/routes/announcementRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
 const profileRoutes = require("./src/routes/profileRoutes"); // Import profile routes
+const { authLimiter, generalLimiter } = require("./src/middleware/rateLimitMiddleware");
 
 dotenv.config();
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
 // Connect to the database
 connectDB();
@@ -24,6 +26,7 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 app.use(helmet()); // Use Helmet for security
+app.use(compression()); // Enable gzip compression
 
 // Set Content Security Policy (CSP) with Helmet
 app.use(
@@ -52,6 +55,10 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
   res.status(200).json({ message: "Server is running smoothly!" });
 });
+
+// Apply rate limiting
+app.use("/api/auth", authLimiter);
+app.use(generalLimiter); // General rate limit for all APIs
 
 // Routes
 app.use("/api/auth", authRoutes);

@@ -27,7 +27,5 @@ const TimeSchema = new mongoose.Schema(
   { timestamps: true }
 ); // Automatically manage createdAt and updatedAt fields
 
-// Create an index on empId for faster lookups
-TimeSchema.index({ empId: 1 });
 
 module.exports = mongoose.model("Time", TimeSchema);
