@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const helmet = require("helmet"); // Import Helmet
+const helmet = require("helmet");
 const compression = require("compression");
 const connectDB = require("./src/config/db");
 const authRoutes = require("./src/routes/authRoutes");
@@ -12,7 +12,7 @@ const timeRoutes = require("./src/routes/timeRoutes");
 const performanceRoutes = require("./src/routes/performanceRoutes");
 const announcementRoutes = require("./src/routes/announcementRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
-const profileRoutes = require("./src/routes/profileRoutes"); // Import profile routes
+const profileRoutes = require("./src/routes/profileRoutes");
 const { authLimiter, generalLimiter } = require("./src/middleware/rateLimitMiddleware");
 
 dotenv.config();
@@ -22,28 +22,38 @@ const PORT = process.env.PORT;
 // Connect to the database
 connectDB();
 
-// Middleware
+// FIXED CORS CONFIGURATION
 app.use(cors({
-  origin: ["https://your-netlify-app.netlify.app", "http://localhost:5173"],
-  credentials: true
+  origin: ["https://vis-orbenix.netlify.app", "http://localhost:5173"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 }));
-app.use(express.json());
-app.use(helmet()); // Use Helmet for security
-app.use(compression()); // Enable gzip compression
 
-// Set Content Security Policy (CSP) with Helmet
+// Allow preflight requests for all routes
+app.options("*", cors());
+
+// Middleware
+app.use(express.json());
+app.use(helmet()); 
+app.use(compression());
+
+// ✅ FIXED CONTENT SECURITY POLICY
 app.use(
   helmet.contentSecurityPolicy({
     directives: {
-      defaultSrc: ["'none'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts
-      styleSrc: ["'self'", "'unsafe-inline'"], // Allow inline styles
-      // Add other directives as needed
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      connectSrc: [
+        "'self'",
+        "https://vis-orbenix.netlify.app",
+        "https://orbenix-backend.onrender.com"
+      ],
     },
   })
 );
 
-// Log incoming requests for better debugging
+// Log incoming requests
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.url}`);
   next();
@@ -51,7 +61,7 @@ app.use((req, res, next) => {
 
 // Root route
 app.get("/", (req, res) => {
-  res.status(200).send("Welcome to the API!"); // Simple response
+  res.status(200).send("Welcome to the API!");
 });
 
 // Health Check Route
@@ -61,7 +71,7 @@ app.get("/health", (req, res) => {
 
 // Apply rate limiting
 app.use("/api/auth", authLimiter);
-app.use(generalLimiter); // General rate limit for all APIs
+app.use(generalLimiter);
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -72,22 +82,23 @@ app.use("/api/time", timeRoutes);
 app.use("/api/performance", performanceRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/notifications", notificationRoutes);
-app.use("/api/profiles", profileRoutes); // Add profile routes
+app.use("/api/profiles", profileRoutes);
 
-// Centralized Error Handling Middleware
+// Centralized Error Handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res
-    .status(500)
-    .json({ message: "Something went wrong!", error: err.message });
+  res.status(500).json({
+    message: "Something went wrong!",
+    error: err.message,
+  });
 });
 
-// Graceful Shutdown
+// Start server
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-// Handle termination signals for graceful shutdown
+// Graceful shutdown
 process.on("SIGINT", () => {
   console.log("Received SIGINT. Shutting down gracefully...");
   server.close(() => {
