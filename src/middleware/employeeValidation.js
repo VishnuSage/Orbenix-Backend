@@ -2,7 +2,6 @@
 const { body, validationResult, param } = require('express-validator');
 
 const validateAddEmployee = [
-  body('empId').notEmpty().withMessage('Employee ID is required'),
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('phone').notEmpty().withMessage('Phone is required'),
