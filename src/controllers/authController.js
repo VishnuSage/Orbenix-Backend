@@ -28,14 +28,13 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "User  already registered" });
     }
 
-    // Create a User record with a hashed password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Create a User record; password will be hashed by pre-save hook
     const user = new AuthModel({
       empId: employee.empId,
       name: employee.name,
       email: employee.email,
       phone: employee.phone,
-      password: hashedPassword,
+      password: password,
       roles: employee.roles,
     });
     await user.save();
@@ -52,19 +51,23 @@ exports.login = async (req, res) => {
   const { emailOrPhone, password } = req.body;
 
   try {
+    console.log("Login attempt:", req.body);
+
     // Find the user (use toLowerCase for email)
     const user = await AuthModel.findOne({
       $or: [{ email: emailOrPhone.toLowerCase() }, { phone: emailOrPhone }],
     });
 
     if (!user) {
-      return res.status(404).json({ message: "User  not found" });
+      console.log("User not found for:", emailOrPhone);
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Use the comparePassword method from the model
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
+      console.log("Invalid password for user:", emailOrPhone);
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -79,7 +82,7 @@ exports.login = async (req, res) => {
         expiresIn: "1h",
       }
     );
-    console.log("Sending login response:", { token, user });
+    console.log("Login successful for:", emailOrPhone);
     res.status(200).json({
       data: {
         token, // JWT Token
@@ -111,11 +114,8 @@ exports.passwordReset = async (req, res) => {
       return res.status(404).json({ message: "User  not found" });
     }
 
-    // Hash the new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update the user's password directly
-    user.password = hashedPassword;
+    // Update the user's password directly; pre-save hook will hash it
+    user.password = newPassword;
     await user.save();
 
     res.status(200).json({ message: "Password reset successfully" });
@@ -143,9 +143,9 @@ exports.updatePassword = async (req, res) => {
       return res.status(401).json({ message: "Current password is incorrect" });
     }
 
-    // Hash the new password before saving
-    user.password = await bcrypt.hash(newPassword, 10);
-    await user.save(); // This will trigger the pre-save hook to hash the password
+    // Set the new password; pre-save hook will hash it
+    user.password = newPassword;
+    await user.save();
 
     res.status(200).json({ message: "Password updated successfully" });
   } catch (error) {
