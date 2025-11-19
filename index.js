@@ -23,7 +23,10 @@ const PORT = process.env.PORT;
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ["https://your-netlify-app.netlify.app", "http://localhost:5173"],
+  credentials: true
+}));
 app.use(express.json());
 app.use(helmet()); // Use Helmet for security
 app.use(compression()); // Enable gzip compression
